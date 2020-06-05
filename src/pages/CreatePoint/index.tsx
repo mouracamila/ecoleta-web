@@ -1,12 +1,56 @@
-import React from "react";
+import React, { useEffect, useState, ChangeEvent } from "react";
 import { Link } from "react-router-dom";
 import { FiArrowLeft } from "react-icons/fi";
-import logo from "../../assets/logo.svg";
+
 import { Map, TileLayer, Marker } from "react-leaflet";
+import axios from "axios";
+import api from "../../services/api";
 
 import "./styles.css";
+import logo from "../../assets/logo.svg";
+
+interface Item {
+  id: number;
+  title: string;
+  image_url: string;
+}
+
+interface IBGEUFResponse {
+  sigla: string;
+}
 
 const CreatePoint = () => {
+  const [items, setItems] = useState<Item[]>([]);
+  const [ufs, setUfs] = useState<string[]>([]);
+
+  const [selectedUF, setSelectedUf] = useState("0");
+
+  useEffect(() => {
+    api.get("items").then((response) => {
+      setItems(response.data);
+    });
+  }, []);
+
+  useEffect(() => {
+    axios
+      .get<IBGEUFResponse[]>(
+        "https://servicodados.ibge.gov.br/api/v1/localidades/estados"
+      )
+      .then((respose) => {
+        const ufInitials = respose.data.map((uf) => uf.sigla);
+
+        setUfs(ufInitials);
+      });
+  }, []);
+
+  useEffect(() => {}, []);
+
+  function handleSelectUf(event: ChangeEvent<HTMLSelectElement>) {
+    const uf = event.target.value;
+
+    setSelectedUf(uf);
+  }
+
   return (
     <div id="page-create-point">
       <header>
@@ -58,8 +102,21 @@ const CreatePoint = () => {
           <div className="field-group">
             <div className="field">
               <label htmlFor="uf">State(UF)</label>
-              <select name="uf" id="uf">
+              <select
+                name="uf"
+                id="uf"
+                value={setSelectedUf}
+                onChange={handleSelectUf}
+              >
                 <option value="0">Select a UF</option>
+                {ufs.map((uf) => {
+                  console.log(uf);
+                  return (
+                    <option key={uf} value={uf}>
+                      {uf}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             <div className="field">
@@ -76,33 +133,15 @@ const CreatePoint = () => {
             <span>You can select one or more itens</span>
           </legend>
           <ul className="items-grid">
-            <li>
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
-            <li className="selected">
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
-            <li>
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
-            <li>
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
-            <li>
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
-            <li>
-              <img src="" alt="Test" />
-              <span>Kitchen oil</span>
-            </li>
+            {items.map((item) => (
+              <li key={item.id}>
+                <img src={item.image_url} alt={item.title} />
+                <span>{item.title}</span>
+              </li>
+            ))}
           </ul>
         </fieldset>
-        <button type="submit">Register</button>
+        <button type="submit">Register collection point</button>
       </form>
     </div>
   );
